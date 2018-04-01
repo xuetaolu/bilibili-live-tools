@@ -63,6 +63,10 @@ class Login():
                 self.bilibili.csrf = cookie[0]['value']
                 self.bilibili.access_key = access_key
                 self.bilibili.cookie = cookie_format
+                
+                self.bilibili.mid = response.json()['data']['token_info']['mid']
+                # 用户id，暂用于发送包裹礼物
+                
                 self.bilibili.pcheaders = {
                     'Accept': 'application/json, text/plain, */*',
                     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36',
