@@ -26,11 +26,6 @@ def CurrentTime():
     
 
 
-def calculate_sign(str):
-    hash = hashlib.md5()
-    hash.update(str.encode('utf-8'))
-    sign = hash.hexdigest()
-    return sign
 
 
 
@@ -43,9 +38,15 @@ class bilibili():
             fileDir = os.path.dirname(os.path.realpath('__file__'))
             cls.instance.file_bilibili = fileDir + "/conf/bilibili.conf"
             cls.instance.dic_bilibili = configloader.load_bilibili(cls.instance.file_bilibili)
+            cls.instance.bili_section = requests.session()
         return cls.instance
         
-
+    def calc_sign(self, str):
+        str = str + self.dic_bilibili['app_secret']
+        hash = hashlib.md5()
+        hash.update(str.encode('utf-8'))
+        sign = hash.hexdigest()
+        return sign
 
     def post_watching_history(self, room_id):
         data = {
@@ -53,79 +54,40 @@ class bilibili():
             "csrf_token": self.dic_bilibili['csrf']
         }
         url = "https://api.live.bilibili.com/room/v1/Room/room_entry_action"
-        response = requests.post(url, data=data, headers=self.dic_bilibili['pcheaders'])
-        return 0
+        response = self.bili_section.post(url, data=data, headers=self.dic_bilibili['pcheaders'])
+        return response
 
-    def check_room_true(self, roomid):
-        response = self.request_check_room(roomid)
-        if response.json()['code'] == 0:
-            param1 = response.json()['data']['is_hidden']
-            param2 = response.json()['data']['is_locked']
-            param3 = response.json()['data']['encrypted']
-            return param1, param2, param3
-
+    
     def silver2coin(self):
         url = "https://api.live.bilibili.com/exchange/silver2coin"
-        response = requests.post(url, headers=self.dic_bilibili['pcheaders'])
+        response = self.bili_section.post(url, headers=self.dic_bilibili['pcheaders'])
         print("#", response.json()['msg'])
         temp_params = 'access_key=' + self.dic_bilibili['access_key'] + '&actionKey=' + self.dic_bilibili[
             'actionKey'] + '&appkey=' + self.dic_bilibili['appkey'] + '&build=' + self.dic_bilibili[
                           'build'] + '&device=' + self.dic_bilibili['device'] + '&mobi_app=' + self.dic_bilibili[
                           'mobi_app'] + '&platform=' + self.dic_bilibili['platform'] + '&ts=' + CurrentTime()
-        params = temp_params + self.dic_bilibili['app_secret']
-        hash = hashlib.md5()
-        hash.update(params.encode('utf-8'))
-        app_url = "https://api.live.bilibili.com/AppExchange/silver2coin?" + temp_params + "&sign=" + str(
-            hash.hexdigest())
-        response1 = requests.post(app_url, headers=self.dic_bilibili['appheaders'])
+        sign = self.calc_sign(temp_params)
+        app_url = "https://api.live.bilibili.com/AppExchange/silver2coin?" + temp_params + "&sign=" + sign
+        response1 = self.bili_section.post(app_url, headers=self.dic_bilibili['appheaders'])
         print("#", response1.json()['msg'])
         
     def request_check_room(self, roomid):
         url = "https://api.live.bilibili.com/room/v1/Room/room_init?id=" + str(roomid)
-        response = requests.get(url, headers=self.dic_bilibili['pcheaders'])
+        response = self.bili_section.get(url, headers=self.dic_bilibili['pcheaders'])
         return response
 
     def request_fetch_bag_list(self):
-        url = "http://api.live.bilibili.com/gift/v2/gift/bag_list"
-        response = requests.get(url, headers=self.dic_bilibili['pcheaders'])
+        url = "https://api.live.bilibili.com/gift/v2/gift/bag_list"
+        response = self.bili_section.get(url, headers=self.dic_bilibili['pcheaders'])
         return response
         
     def request_check_taskinfo(self):
         url = 'https://api.live.bilibili.com/i/api/taskInfo'
-        response = requests.get(url, headers=self.dic_bilibili['pcheaders'])
+        response = self.bili_section.get(url, headers=self.dic_bilibili['pcheaders'])
         return response
 
-    def get_uid_in_room(self, roomID):
-        response = self.request_check_room(roomID)
-        return response.json()['data']['uid'], response.json()['data']['room_id']
-
-    def send_bag_gift_web(self, roomID, giftID, giftNum, bagID):
-        url = "http://api.live.bilibili.com/gift/v2/live/bag_send"
-        temp = self.get_uid_in_room(roomID)
-        data = {
-            'uid': self.dic_bilibili['uid'],
-            'gift_id': giftID,
-            'ruid': temp[0],
-            'gift_num': giftNum,
-            'bag_id': bagID,
-            'platform': 'pc',
-            'biz_code': 'live',
-            'biz_id': temp[1],
-            'rnd': CurrentTime(),
-            'storm_beat_id': '0',
-            'metadata': '',
-            'price': '0',
-            'csrf_token': self.dic_bilibili['csrf']
-        }
-        response = requests.post(url, headers=self.dic_bilibili['pcheaders'], data=data)
-        try:
-            # print(response.json())
-            print("# 清理快到期礼物:", response.json()['data']['gift_name'] + "x" + str(response.json()['data']['gift_num']))
-        except:
-            print("# 清理快到期礼物成功，但请联系开发者修bug!")
-            
     def request_send_gift_web(self, giftid, giftnum, bagid, ruid, biz_id):
-        url = "http://api.live.bilibili.com/gift/v2/live/bag_send"
+        url = "https://api.live.bilibili.com/gift/v2/live/bag_send"
         data = {
             'uid': self.dic_bilibili['uid'],
             'gift_id': giftid,
@@ -141,12 +103,12 @@ class bilibili():
             'price': '0',
             'csrf_token': self.dic_bilibili['csrf']
         }
-        response = requests.post(url, headers=self.dic_bilibili['pcheaders'], data=data)
+        response = self.bili_section.post(url, headers=self.dic_bilibili['pcheaders'], data=data)
         return response
 
     def request_fetch_user_info(self):
         url = "https://api.live.bilibili.com/i/api/liveinfo"
-        response = requests.get(url, headers=self.dic_bilibili['pcheaders'])
+        response = self.bili_section.get(url, headers=self.dic_bilibili['pcheaders'])
         return response
 
 
@@ -156,7 +118,7 @@ class bilibili():
         time = CurrentTime()
         list_url = ["access_key=" + self.dic_bilibili['access_key'], "appkey=" + self.dic_bilibili['appkey'], 'aid=',
                     'page=1', "build=" + self.dic_bilibili['build']]
-        sign = calculate_sign('&'.join(sorted(list_url)) + self.dic_bilibili['app_secret'])
+        sign = self.calc_sign('&'.join(sorted(list_url)))
 
         url = url + '&'.join(list_url[:3] + ['sign=' + sign] + list_url[3:])
 
@@ -201,7 +163,7 @@ class bilibili():
             'type': "json"
         }
 
-        response = requests.post(url, headers=self.dic_bilibili['appheaders'], data=data)
+        response = self.bili_section.post(url, headers=self.dic_bilibili['appheaders'], data=data)
         return response
 
     def request_send_danmu_msg_web(self, msg, roomId):
@@ -216,22 +178,20 @@ class bilibili():
             'csrf_token': self.dic_bilibili['csrf']
         }
 
-        response = requests.post(url, headers=self.dic_bilibili['pcheaders'], data=data)
+        response = self.bili_section.post(url, headers=self.dic_bilibili['pcheaders'], data=data)
         return response
 
 
     def request_fetchmedal(self):
         url = 'https://api.live.bilibili.com/i/api/medal?page=1&pageSize=50'
-        response = requests.post(url, headers=self.dic_bilibili['pcheaders'])
+        response = self.bili_section.post(url, headers=self.dic_bilibili['pcheaders'])
         return response
 
 
     def GetHash(self):
         url = 'https://passport.bilibili.com/api/oauth2/getKey'
-        temp_params = 'appkey=' + self.dic_bilibili['appkey'] + self.dic_bilibili['app_secret']
-        hash = hashlib.md5()
-        hash.update(temp_params.encode('utf-8'))
-        sign = hash.hexdigest()
+        temp_params = 'appkey=' + self.dic_bilibili['appkey']
+        sign = self.calc_sign(temp_params)
         params = {'appkey': self.dic_bilibili['appkey'], 'sign': sign}
         response = requests.post(url, data=params)
         value = response.json()['data']
@@ -261,10 +221,7 @@ class bilibili():
             # url = 'https://passport.bilibili.com/api/oauth2/login'   //旧接口
             url = "https://passport.bilibili.com/api/v2/oauth2/login"
             temp_params = 'appkey=' + self.dic_bilibili['appkey'] + '&password=' + password + '&username=' + username
-            params = temp_params + self.dic_bilibili['app_secret']
-            hash = hashlib.md5()
-            hash.update(params.encode('utf-8'))
-            sign = hash.hexdigest()
+            sign = self.calc_sign(temp_params)
             headers = {"Content-type": "application/x-www-form-urlencoded"}
             payload = "appkey=" + self.dic_bilibili[
                 'appkey'] + "&password=" + password + "&username=" + username + "&sign=" + sign
@@ -291,10 +248,7 @@ class bilibili():
                     'actionKey'] + '&appkey=' + self.dic_bilibili['appkey'] + '&build=' + self.dic_bilibili[
                                   'build'] + '&captcha='+captcha+'&device=' + self.dic_bilibili['device'] + '&mobi_app=' + self.dic_bilibili['mobi_app'] + '&password='+ password +'&platform=' + self.dic_bilibili[
                                   'platform'] +'&username='+username
-                params = temp_params + self.dic_bilibili['app_secret']
-                hash = hashlib.md5()
-                hash.update(params.encode('utf-8'))
-                sign = hash.hexdigest()
+                sign = self.calc_sign(temp_params)
                 payload = temp_params + '&sign=' + sign
                 headers['Content-type'] = "application/x-www-form-urlencoded"
                 headers['cookie'] = "sid=hxt5szbb"
@@ -338,13 +292,13 @@ class bilibili():
 
     def get_gift_of_storm(self, dic):
         roomid = dic['roomid']
-        get_url = "http://api.live.bilibili.com/lottery/v1/Storm/check?roomid=" + str(roomid)
-        response = requests.get(get_url, headers=self.dic_bilibili['pcheaders'])
+        get_url = "https://api.live.bilibili.com/lottery/v1/Storm/check?roomid=" + str(roomid)
+        response = self.bili_section.get(get_url, headers=self.dic_bilibili['pcheaders'])
         temp = response.json()
         check = len(temp['data'])
         if check != 0 and temp['data']['hasJoin'] != 1:
             id = temp['data']['id']
-            storm_url = 'http://api.live.bilibili.com/lottery/v1/Storm/join'
+            storm_url = 'https://api.live.bilibili.com/lottery/v1/Storm/join'
             payload = {
                 "id": id,
                 "color": "16777215",
@@ -352,7 +306,7 @@ class bilibili():
                 "captcha_phrase": "",
                 "token": "",
                 "csrf_token": self.dic_bilibili['csrf']}
-            response1 = requests.post(storm_url, data=payload, headers=self.dic_bilibili['pcheaders'], timeout=2)
+            response1 = self.bili_section.post(storm_url, data=payload, headers=self.dic_bilibili['pcheaders'], timeout=2)
             return response1
         else:
             return None
@@ -371,14 +325,12 @@ class bilibili():
                           'platform'] + '&room_id=' + str(
             text1) + '&ts=' + CurrentTime()
         params = temp_params + self.dic_bilibili['app_secret']
-        hash = hashlib.md5()
-        hash.update(params.encode('utf-8'))
-        true_url = 'http://api.live.bilibili.com/YunYing/roomEvent?' + temp_params + '&sign=' + str(
-            hash.hexdigest())
-        pc_url = 'http://api.live.bilibili.com/activity/v1/Raffle/join?roomid=' + str(
+        sign = self.calc_sign(temp_params)
+        true_url = 'https://api.live.bilibili.com/YunYing/roomEvent?' + temp_params + '&sign=' + sign
+        pc_url = 'https://api.live.bilibili.com/activity/v1/Raffle/join?roomid=' + str(
             text1) + '&raffleId=' + str(raffleid)
-        response1 = requests.get(true_url, params=params, headers=headers)
-        pc_response = requests.get(pc_url, headers=headers)
+        response1 = self.bili_section.get(true_url, params=params, headers=headers)
+        pc_response = self.bili_section.get(pc_url, headers=headers)
 
         return response1, pc_response
 
@@ -389,19 +341,16 @@ class bilibili():
             raffleid) + '&mobi_app=' + self.dic_bilibili['mobi_app'] + '&platform=' + self.dic_bilibili[
                           'platform'] + '&roomid=' + str(
             real_roomid) + '&ts=' + CurrentTime()
-        params = temp_params + self.dic_bilibili['app_secret']
-        hash = hashlib.md5()
-        hash.update(params.encode('utf-8'))
-        true_url = 'http://api.live.bilibili.com/AppSmallTV/join?' + temp_params + '&sign=' + str(
-            hash.hexdigest())
-        response2 = requests.get(true_url, headers=self.dic_bilibili['appheaders'])
+        sign = self.calc_sign(temp_params)
+        true_url = 'https://api.live.bilibili.com/AppSmallTV/join?' + temp_params + '&sign=' + sign
+        response2 = self.bili_section.get(true_url, headers=self.dic_bilibili['appheaders'])
         return response2
 
     def get_gift_of_captain(self, roomid, id):
         join_url = "https://api.live.bilibili.com/lottery/v1/lottery/join"
         payload = {"roomid": roomid, "id": id, "type": "guard", "csrf_token": self.dic_bilibili['csrf']}
         print(payload)
-        response2 = requests.post(join_url, data=payload, headers=self.dic_bilibili['pcheaders'])
+        response2 = self.bili_section.post(join_url, data=payload, headers=self.dic_bilibili['pcheaders'])
         return response2
 
     def get_giftlist_of_events(self, text1):
@@ -412,8 +361,8 @@ class bilibili():
             'accept-encoding': 'gzip, deflate',
             'Host': 'api.live.bilibili.com',
         }
-        url = 'http://api.live.bilibili.com/activity/v1/Raffle/check?roomid=' + str(text1)
-        response = requests.get(url, headers=headers)
+        url = 'https://api.live.bilibili.com/activity/v1/Raffle/check?roomid=' + str(text1)
+        response = self.bili_section.get(url, headers=headers)
 
         return response
 
@@ -424,15 +373,12 @@ class bilibili():
                       '&mobi_app=' + self.dic_bilibili['mobi_app'] + '&platform=' + self.dic_bilibili[
                           'platform'] + '&roomid=' + str(
             real_roomid) + '&ts=' + CurrentTime()
-        params = temp_params + self.dic_bilibili['app_secret']
-        hash = hashlib.md5()
-        hash.update(params.encode('utf-8'))
-        check_url = 'https://api.live.bilibili.com/AppSmallTV/index?' + temp_params + '&sign=' + str(
-            hash.hexdigest())
+        sign = self.calc_sign(temp_params)
+        check_url = 'https://api.live.bilibili.com/AppSmallTV/index?' + temp_params + '&sign=' + sign
         headers = {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36",
         }
-        response = requests.get(check_url, headers=headers)
+        response = self.bili_section.get(check_url, headers=headers)
 
         return response
 
@@ -450,7 +396,7 @@ class bilibili():
         "Upgrade-Insecure-Requests": "1",
         "User-Agent":'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:59.0) Gecko/20100101 Firefox/59.0'
         }
-        response1 = requests.get(true_url,headers=headers)
+        response1 = self.bili_section.get(true_url,headers=headers)
         return response1
 
 
@@ -462,7 +408,7 @@ class bilibili():
         return self.dic_bilibili['giftids_raffle'].keys()
 
     def get_activity_result(self, activity_roomid, activity_raffleid):
-        url = "http://api.live.bilibili.com/activity/v1/Raffle/notice?roomid=" + str(
+        url = "https://api.live.bilibili.com/activity/v1/Raffle/notice?roomid=" + str(
             activity_roomid) + "&raffleId=" + str(activity_raffleid)
         headers = {
             'Accept': 'application/json, text/plain, */*',
@@ -472,11 +418,11 @@ class bilibili():
             'Host': 'api.live.bilibili.com',
             'cookie': self.dic_bilibili['cookie'],
         }
-        response = requests.get(url, headers=headers)
+        response = self.bili_section.get(url, headers=headers)
         return response
 
     def get_TV_result(self, TV_roomid, TV_raffleid):
-        url = "http://api.live.bilibili.com/gift/v2/smalltv/notice?roomid=" + str(TV_roomid) + "&raffleId=" + str(
+        url = "https://api.live.bilibili.com/gift/v2/smalltv/notice?roomid=" + str(TV_roomid) + "&raffleId=" + str(
             TV_raffleid)
         headers = {
             'Accept': 'application/json, text/plain, */*',
@@ -486,12 +432,12 @@ class bilibili():
             'Host': 'api.live.bilibili.com',
             'cookie': self.dic_bilibili['cookie'],
         }
-        response = requests.get(url, headers=headers)
+        response = self.bili_section.get(url, headers=headers)
         return response
 
     def pcpost_heartbeat(self):
-        url = 'http://api.live.bilibili.com/User/userOnlineHeart'
-        response = requests.post(url, headers=self.dic_bilibili['pcheaders'])
+        url = 'https://api.live.bilibili.com/User/userOnlineHeart'
+        response = self.bili_section.post(url, headers=self.dic_bilibili['pcheaders'])
 
     # 发送app心跳包
     def apppost_heartbeat(self):
@@ -500,28 +446,26 @@ class bilibili():
             'actionKey'] + '&appkey=' + self.dic_bilibili['appkey'] + '&build=' + self.dic_bilibili[
                           'build'] + '&device=' + self.dic_bilibili['device'] + '&mobi_app=' + self.dic_bilibili[
                           'mobi_app'] + '&platform=' + self.dic_bilibili['platform'] + '&ts=' + time
-        params = temp_params + self.dic_bilibili['app_secret']
-        hash = hashlib.md5()
-        hash.update(params.encode('utf-8'))
-        url = 'https://api.live.bilibili.com/mobile/userOnlineHeart?' + temp_params + '&sign=' + str(hash.hexdigest())
+        sign = self.calc_sign(temp_params)
+        url = 'https://api.live.bilibili.com/mobile/userOnlineHeart?' + temp_params + '&sign=' + sign
         payload = {'roomid': 23058, 'scale': 'xhdpi'}
-        response = requests.post(url, data=payload, headers=self.dic_bilibili['appheaders'])
-        # print("app端心跳状态：" + response.json()['message'])
+        response = self.bili_section.post(url, data=payload, headers=self.dic_bilibili['appheaders'])
+        return response
 
     # 心跳礼物
     def heart_gift(self):
         url = "https://api.live.bilibili.com/gift/v2/live/heart_gift_receive?roomid=3&area_v2_id=34"
-        response = requests.get(url, headers=self.dic_bilibili['pcheaders'])
-        # print(response.json())
+        response = self.bili_section.get(url, headers=self.dic_bilibili['pcheaders'])
+        return response
 
     def get_lotterylist(self, i):
         url = "https://api.live.bilibili.com/lottery/v1/box/getStatus?aid=" + str(i)
-        response = requests.get(url, headers=self.dic_bilibili['pcheaders'])
+        response = self.bili_section.get(url, headers=self.dic_bilibili['pcheaders'])
         return response
 
     def get_gift_of_lottery(self, i, g):
         url1 = 'https://api.live.bilibili.com/lottery/v1/box/draw?aid=' + str(i) + '&number=' + str(g + 1)
-        response1 = requests.get(url1, headers=self.dic_bilibili['pcheaders'])
+        response1 = self.bili_section.get(url1, headers=self.dic_bilibili['pcheaders'])
         return response1
 
     def get_time_about_silver(self):
@@ -530,12 +474,9 @@ class bilibili():
             'actionKey'] + '&appkey=' + self.dic_bilibili['appkey'] + '&build=' + self.dic_bilibili[
                           'build'] + '&device=' + self.dic_bilibili['device'] + '&mobi_app=' + self.dic_bilibili[
                           'mobi_app'] + '&platform=' + self.dic_bilibili['platform'] + '&ts=' + time
-        params = temp_params + self.dic_bilibili['app_secret']
-        hash = hashlib.md5()
-        hash.update(params.encode('utf-8'))
-        GetTask_url = 'https://api.live.bilibili.com/mobile/freeSilverCurrentTask?' + temp_params + '&sign=' + str(
-            hash.hexdigest())
-        response = requests.get(GetTask_url, headers=self.dic_bilibili['appheaders'])
+        sign = self.calc_sign(temp_params)
+        GetTask_url = 'https://api.live.bilibili.com/mobile/freeSilverCurrentTask?' + temp_params + '&sign=' + sign
+        response = self.bili_section.get(GetTask_url, headers=self.dic_bilibili['appheaders'])
         return response
 
     def get_silver(self, timestart, timeend):
@@ -545,28 +486,25 @@ class bilibili():
                           'build'] + '&device=' + self.dic_bilibili['device'] + '&mobi_app=' + self.dic_bilibili[
                           'mobi_app'] + '&platform=' + self.dic_bilibili[
                           'platform'] + '&time_end=' + timeend + '&time_start=' + timestart + '&ts=' + time
-        params = temp_params + self.dic_bilibili['app_secret']
-        hash = hashlib.md5()
-        hash.update(params.encode('utf-8'))
-        url = 'https://api.live.bilibili.com/mobile/freeSilverAward?' + temp_params + '&sign=' + str(
-            hash.hexdigest())
-        response = requests.get(url, headers=self.dic_bilibili['appheaders'])
+        sign = self.calc_sign(temp_params)
+        url = 'https://api.live.bilibili.com/mobile/freeSilverAward?' + temp_params + '&sign=' + sign
+        response = self.bili_section.get(url, headers=self.dic_bilibili['appheaders'])
         return response
 
     def get_dailybag(self):
-        url = 'http://api.live.bilibili.com/gift/v2/live/receive_daily_bag'
-        response = requests.get(url, headers=self.dic_bilibili['pcheaders'])
+        url = 'https://api.live.bilibili.com/gift/v2/live/receive_daily_bag'
+        response = self.bili_section.get(url, headers=self.dic_bilibili['pcheaders'])
         return response
 
     def get_dosign(self):
         url = 'https://api.live.bilibili.com/sign/doSign'
-        response = requests.get(url, headers=self.dic_bilibili['pcheaders'])
+        response = self.bili_section.get(url, headers=self.dic_bilibili['pcheaders'])
         return response
 
     def get_dailytask(self):
         url = 'https://api.live.bilibili.com/activity/v1/task/receive_award'
         payload2 = {'task_id': 'double_watch_task'}
-        response2 = requests.post(url, data=payload2, headers=self.dic_bilibili['appheaders'])
+        response2 = self.bili_section.post(url, data=payload2, headers=self.dic_bilibili['appheaders'])
         return response2
 
     def get_grouplist(self):
@@ -583,11 +521,8 @@ class bilibili():
                       self.dic_bilibili['build'] + "&group_id=" + str(i1) + "&mobi_app=" + self.dic_bilibili[
                           'mobi_app'] + "&owner_id=" + str(i2) + "&platform=" + self.dic_bilibili[
                           'platform'] + "&src=xiaomi&trace_id=20171224024300024&ts=" + CurrentTime() + "&version=5.20.1.520001"
-        params = temp_params + self.dic_bilibili['app_secret']
-        hash = hashlib.md5()
-        hash.update(params.encode('utf-8'))
-        url = "https://api.vc.bilibili.com/link_setting/v1/link_setting/sign_in?" + temp_params + "&sign=" + str(
-            hash.hexdigest())
+        sign = self.calc_sign(temp_params)
+        url = "https://api.vc.bilibili.com/link_setting/v1/link_setting/sign_in?" + temp_params + "&sign=" + sign
         appheaders = self.dic_bilibili['appheaders'].copy()
         appheaders['Host'] = "api.vc.bilibili.com"
         response = requests.get(url, headers=appheaders)
