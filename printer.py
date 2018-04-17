@@ -6,6 +6,8 @@ import webcolors
 import asyncio
 import os
 import configloader
+import time
+import threading
 
 # "#969696"
 def hex_to_rgb_percent(hex_str):
@@ -20,6 +22,11 @@ def level(str):
     if str == "debug":
         return 1
 
+def timestamp(tag_time):
+    if tag_time:
+        return time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+    else:
+        return None
 
 class Printer():       
     instance = None
@@ -33,6 +40,7 @@ class Printer():
             file_user = fileDir + "/conf/user.conf"
             cls.instance.dic_user = configloader.load_user(file_user)
             cls.instance.printlist=[]
+            cls.instance.lock = threading.Lock()
         return cls.instance
     def concole_print(self, msg, color=[]):
         if color:
@@ -44,7 +52,7 @@ class Printer():
         else:
             print(''.join(msg))  
               
-    def printlist_append(self, dic):
+    def printlist_append(self, dic, tag_time=False):
         tag = False
         dic_printcontrol = self.dic_user['print_control']
         if dic[0] in dic_printcontrol.keys():
@@ -55,35 +63,50 @@ class Printer():
         if tag:
             if dic[1] == '弹幕':
                 list_msg, list_color = self.print_danmu_msg(dic[3]) 
+                self.lock.acquire()
                 self.printlist.append([0, list_msg, list_color])
+                self.lock.release()
                 return 
             
             if isinstance(dic[3], list):
               #  print(dic[3])
                 # [[list]]
-                self.printlist.append([dic[3]])
+                self.lock.acquire()
+                self.printlist.append([timestamp(tag_time), [dic[3]]])
+                self.lock.release()
             else:
                # print(dic[3:])
                 # [ss, ss]
-                self.printlist.append(dic[3:])
+                self.lock.acquire()
+                self.printlist.append([timestamp(tag_time), dic[3:]])
+                self.lock.release()
         
     async def clean_printlist(self):
         
         while True:
+            len_printlist = len(self.printlist)
             for i in self.printlist:
+                
                 if i[0] == 0:
                     if (self.dic_user['platform']['platform'] == 'ios_pythonista'):
                         self.concole_print(i[1], i[2])
                     else:
                         self.concole_print(i[1])
-        
-                    
-                elif isinstance(i[0], list):
-                    for j in i[0]:
-                        print(j)
                 else:
-                    print(' '.join(i))
-            self.printlist=[]
+                    if i[0] is None:
+                        pass
+                    else:
+                        print(''.join(['[', i[0], ']']), end=' ')
+                        
+                    if isinstance(i[1][0], list):
+                        for j in i[1][0]:
+                            print(j)
+                    else:
+                        print(''.join(i[1]))
+            if len_printlist != 0:
+                self.lock.acquire()
+                del self.printlist[:len_printlist]
+                self.lock.release()
             await asyncio.sleep(0.1)
                         
             
