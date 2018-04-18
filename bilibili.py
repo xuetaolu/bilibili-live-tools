@@ -44,7 +44,11 @@ async def replay_request(response):
     else:
         return False
 
-
+async def request_search_user(name):
+    search_url = "https://search.bilibili.com/api/search?search_type=live&keyword=" + name
+    response = await aiohttp.request('get', search_url)
+    return response
+    
 
 
 
@@ -115,6 +119,8 @@ class bilibili():
         url = "https://api.live.bilibili.com/exchange/coin2silver"
         response = await self.bili_section_post(url, data=data, headers=self.dic_bilibili['pcheaders'])
         return response
+        
+    
 
     async def post_watching_history(self, room_id):
         data = {

@@ -370,9 +370,9 @@ class bilibiliClient():
             a = re.compile(r"(?<=在主播 )\S+(?= 的直播间开通了总督)")
             res = re.search(a, dic['msg'])
             if res is not None:
-                search_url = "https://search.bilibili.com/api/search?search_type=live&keyword=" + str(res.group())
-                response = requests.get(search_url)
-                roomid = response.json()['result']['live_user'][0]['roomid']
+                response = await bilibili.request_search_user(str(res.group()))
+                json_response = await response.json()
+                roomid = json_response['result']['live_user'][0]['roomid']
                 
                 Printer().printlist_append(['join_lottery', '', 'user', "检测到房间{:^9}开通总督".format(roomid)], True)
                 Rafflehandler().append2list_captain(roomid)
