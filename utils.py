@@ -3,6 +3,8 @@ from printer import Printer
 import time
 import datetime
 import math
+from PIL import Image
+from io import BytesIO
 
 def adjust_for_chinese(str):
     SPACE = '\N{IDEOGRAPHIC SPACE}'
@@ -69,24 +71,46 @@ async def send_danmu_msg_web(msg, roomId):
 
 async def fetch_user_info():
     response = await bilibili().request_fetch_user_info()
+    response_ios = await bilibili().request_fetch_user_infor_ios()
     print('[{}] 查询用户信息'.format(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))))
     json_response = await response.json()
+    json_response_ios = await response_ios.json()
+    if json_response_ios['code'] == 0:
+        gold_ios = json_response_ios['data']['gold']
+    # print(json_response_ios)
     if (json_response['code'] == 0):
         data = json_response['data']
-        uname = data['userInfo']['uname']
+        # print(data)
+        userInfo = data['userInfo']
+        userCoinIfo = data['userCoinIfo']
+        uname = userInfo['uname']
         achieve = data['achieves']
-        user_level = data['userCoinIfo']['user_level']
-        silver = data['userCoinIfo']['silver']
-        gold = data['userCoinIfo']['gold']
-        user_next_level = data['userCoinIfo']['user_next_level']
-        user_intimacy = data['userCoinIfo']['user_intimacy']
-        user_next_intimacy = data['userCoinIfo']['user_next_intimacy']
-        user_level_rank = data['userCoinIfo']['user_level_rank']
-        billCoin = data['userCoinIfo']['coins']
+        user_level = userCoinIfo['user_level']
+        silver = userCoinIfo['silver']
+        gold = userCoinIfo['gold']
+        identification = bool(userInfo['identification'])
+        mobile_verify =  bool(userInfo['mobile_verify'])
+        user_next_level = userCoinIfo['user_next_level']
+        user_intimacy = userCoinIfo['user_intimacy']
+        user_next_intimacy = userCoinIfo['user_next_intimacy']
+        user_level_rank = userCoinIfo['user_level_rank']
+        billCoin = userCoinIfo['coins']
+        bili_coins = userCoinIfo['bili_coins']
         print('# 用户名', uname)
+        size = 100, 100
+        response_face = bilibili().request_load_img(userInfo['face'])
+        img = Image.open(BytesIO(response_face.content))
+        img.thumbnail(size)
+        try: 
+            img.show()
+        except :
+            pass
+        print('# 手机认证状况 {} | 实名认证状况 {}'.format(mobile_verify, identification))
         print('# 银瓜子', silver)
-        print('# 金瓜子', gold)
+        print('# 通用金瓜子', gold)
+        print('# ios可用金瓜子', gold_ios)
         print('# 硬币数', billCoin)
+        print('# b币数', bili_coins)
         print('# 成就值', achieve)
         print('# 等级值', user_level, '———>', user_next_level)
         print('# 经验值', user_intimacy)
@@ -94,7 +118,7 @@ async def fetch_user_info():
         arrow = int(user_intimacy * 30 / user_next_intimacy)
         line = 30 - arrow
         percent = user_intimacy / user_next_intimacy * 100.0
-        process_bar = '[' + '>' * arrow + '-' * line + ']' + '%.2f' % percent + '%'
+        process_bar = '# [' + '>' * arrow + '-' * line + ']' + '%.2f' % percent + '%'
         print(process_bar)
         print('# 等级榜', user_level_rank)
 
@@ -183,6 +207,7 @@ async def check_room(roomid):
     response = await bilibili().request_check_room(roomid)
     json_response = await response.json(content_type=None)
     if json_response['code'] == 0:
+        print(json_response)
         print('查询结果:')
         data = json_response['data']
         print('# 真实房间号为:{}'.format(data['room_id']))
@@ -204,7 +229,28 @@ async def send_gift_web(roomid, giftid, giftnum, bagid):
         print("# 送出礼物:", json_response1['data']['gift_name'] + "X" + str(json_response1['data']['gift_num']))
     else:
         print("# 错误", json_response1['msg'])
+ 
         
+async def fetch_liveuser_info(real_roomid):
+    response = await bilibili().request_fetch_liveuser_info(real_roomid)
+    json_response = await response.json()
+    if json_response['code'] == 0:
+        data = json_response['data']
+        print('# 主播姓名 {}'.format(data['info']['uname']))
+        size = 100, 100
+        response_face = bilibili().request_load_img(data['info']['face'])
+        img = Image.open(BytesIO(response_face.content))
+        img.thumbnail(size)
+        try: 
+            img.show()
+        except :
+            pass
+
+        
+        
+         
+              
+                        
 async def check_room_true(roomid):
     response = await bilibili().request_check_room(roomid)
     json_response = await response.json(content_type=None)

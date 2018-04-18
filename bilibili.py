@@ -180,6 +180,20 @@ class bilibili():
         url = "https://api.live.bilibili.com/i/api/liveinfo"
         response = await self.bili_section_get(url, headers=self.dic_bilibili['pcheaders'])
         return response
+        
+    async def request_fetch_user_infor_ios(self):
+        # 长串请求起作用的就这几个破玩意儿
+        url = 'https://api.live.bilibili.com/mobile/getUser?access_key={}&platform=ios'.format(self.dic_bilibili['access_key'])
+        response = await self.bili_section_get(url)
+        return response
+        
+    async def request_fetch_liveuser_info(self, real_roomid):
+        url = 'https://api.live.bilibili.com/live_user/v1/UserInfo/get_anchor_in_room?roomid={}'.format(real_roomid)
+        response = await self.bili_section_get(url)
+        return response
+        
+    def request_load_img(self, url):
+        return requests.get(url)
 
 
     async def request_send_danmu_msg_andriod(self, msg, roomId):
