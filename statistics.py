@@ -20,8 +20,11 @@ class Statistics:
             # cls.instance.TV_time_list = []
             cls.instance.pushed_event = []
             cls.instance.pushed_TV = []
+            cls.instance.pushed_captain = []
+            
             cls.instance.joined_event = []
             cls.instance.joined_TV = []
+            cls.instance.joined_captain = []
             cls.instance.result = {}
             # cls.instance.TVsleeptime = 185
             # cls.instance.activitysleeptime = 125
@@ -35,9 +38,11 @@ class Statistics:
         # print(self.joined_TV)
         print('本次推送活动抽奖次数:', len(self.pushed_event))
         print('本次推送电视抽奖次数:', len(self.pushed_TV))
+        print('本次推送总督抽奖次数:', len(self.pushed_captain))
         print()
         print('本次参与活动抽奖次数:', len(self.joined_event))
         print('本次参与电视抽奖次数:', len(self.joined_TV))
+        print('本次参与总督抽奖次数:', len(self.joined_captain))
 
     def getresult(self):
         print('本次参与抽奖结果为：')
@@ -134,11 +139,17 @@ class Statistics:
         self.joined_TV.append(decimal_time())
         # print("tv加入成功", self.joined_TV)
         
+    def append_to_captainlist(self):
+        self.joined_captain.append(decimal_time())
+        
     def append2pushed_activitylist(self):
         self.pushed_event.append(decimal_time())
         
     def append2pushed_TVlist(self):
         self.pushed_TV.append(decimal_time())
+        
+    def append2pushed_captainlist(self):
+        self.pushed_captain.append(decimal_time())
 
     def check_TVlist(self, raffleid):
         if raffleid not in self.TV_raffleid_list:
