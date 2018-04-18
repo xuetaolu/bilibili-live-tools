@@ -61,8 +61,25 @@ tasks = [
     biliconsole.Biliconsole().run()
     
 ]
-
-loop.run_until_complete(asyncio.wait(tasks))
+try:
+    loop.run_until_complete(asyncio.wait(tasks))
+except KeyboardInterrupt:
+    # print(sys.exc_info()[0], sys.exc_info()[1])
+    response = bilibili().logout()
+    
+    if response.text.find('成功退出登录') == -1:
+        print('登出失败', response)
+    else:
+        print('成功退出登陆')
+    # loop.run_until_complete(asyncio.wait([bilibili().bili_section.close()]))
+    # task4.danmuji.close_connection()
+    # for task in tasks:
+     #   task.cancel()
+    # loop.run_forever()
+    # biliconsole.Biliconsole().terminite()
+    
+    
+    
 console_thread.join()
 
 loop.close()

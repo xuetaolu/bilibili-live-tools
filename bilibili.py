@@ -109,6 +109,13 @@ class bilibili():
                 #print('当前网络不好，正在重试，请反馈开发者!!!!')
                 #print(sys.exc_info()[0], sys.exc_info()[1])
                 continue
+    def logout(self):
+        url = 'https://passport.bilibili.com/login?act=exit'
+        pcheaders = self.dic_bilibili['pcheaders'].copy()
+        pcheaders['Host'] = "passport.bilibili.com"
+        response = requests.get(url, headers=pcheaders)
+        return response
+        
                 
     #1:900兑换
     async def request_doublegain_coin2silver(self):
