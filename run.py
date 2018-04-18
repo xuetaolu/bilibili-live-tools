@@ -56,7 +56,6 @@ tasks = [
     task2.run(),
     task4.connect(),
     task3.query(),
-    printer.clean_printlist(),
     rafflehandler.run(),
     biliconsole.Biliconsole().run()
     
