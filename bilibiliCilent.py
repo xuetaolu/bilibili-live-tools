@@ -321,33 +321,22 @@ class bilibiliClient():
                     print('请联系开发者', dic)
         if cmd == 'GUARD_MSG':
             print(dic)
-            try:
-                a = re.compile(r"(?<=在主播 )\S+(?= 的直播间开通了总督)")
-                res = a.findall(str(dic))
-                search_url = "https://search.bilibili.com/api/search?search_type=live&keyword=" + str(res[0])
+            a = re.compile(r"(?<=在主播 )\S+(?= 的直播间开通了总督)")
+            res = re.search(a, dic['msg'])
+            if res is not None:
+                search_url = "https://search.bilibili.com/api/search?search_type=live&keyword=" + str(res.group())
                 response = requests.get(search_url)
                 roomid = response.json()['result']['live_user'][0]['roomid']
-                print(roomid)
-                response1 = await bilibili().get_giftlist_of_captain(roomid)
-                json_response1 = await response1.json()
-                print(json_response1)
-                num = len(json_response1['data']['guard'])
-                if num == 0:
-                    print('尝试解决总督')
-                    await asyncio.sleep(10)
+                num = 0
+                while num == 0:
+                    await asyncio.sleep(5)
                     response1 = await bilibili().get_giftlist_of_captain(roomid)
                     json_response1 = await response1.json()
-                    print(json_response1)
+                    # print(json_response1)
                     num = len(json_response1['data']['guard'])
                 for i in range(0, num):
                     id = json_response1['data']['guard'][i]['id']
-                    print(id)
                     response2 = await bilibili().get_gift_of_captain(roomid, id)
                     json_response2 = await response2.json()
-                    payload = {"roomid": roomid, "id": id, "type": "guard", "csrf_token": ''}
-                    print(payload)
-                    print("获取到房间 %s 的总督奖励: " %(roomid),json_response2)
-            except:
-                Printer().printlist_append(['join_lotter', '', 'debug', "# 没领取到奖励,请联系开发者"])
-                pass
+                    print("获取到房间 %s 的总督奖励: " %(roomid),json_response2['data']['message'])
             return
