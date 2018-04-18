@@ -1,6 +1,6 @@
 import sys
 from imp import reload
-import configloader
+from configloader import ConfigLoader
 import os
 import hashlib
 import random
@@ -58,9 +58,7 @@ class bilibili():
     def __new__(cls, *args, **kw):
         if not cls.instance:
             cls.instance = super(bilibili, cls).__new__(cls, *args, **kw)
-            fileDir = os.path.dirname(os.path.realpath('__file__'))
-            file_bilibili = fileDir + "/conf/bilibili.conf"
-            cls.instance.dic_bilibili = configloader.load_bilibili(file_bilibili)
+            cls.instance.dic_bilibili = ConfigLoader().dic_bilibili
             cls.instance.bili_session = None
             print('正在登陆中...')
             tag, msg = cls.instance.login()

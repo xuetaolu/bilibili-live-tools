@@ -5,7 +5,7 @@ except ImportError:
 import webcolors
 import asyncio
 import os
-import configloader
+from configloader import ConfigLoader
 import time
 import threading
 
@@ -34,11 +34,8 @@ class Printer():
     def __new__(cls, *args, **kw):
         if not cls.instance:
             cls.instance = super(Printer, cls).__new__(cls, *args, **kw)
-            fileDir = os.path.dirname(os.path.realpath('__file__'))
-            file_color = fileDir + "/conf/color.conf"
-            cls.instance.dic_color = configloader.load_color(file_color)
-            file_user = fileDir + "/conf/user.conf"
-            cls.instance.dic_user = configloader.load_user(file_user)
+            cls.instance.dic_color = ConfigLoader().dic_color
+            cls.instance.dic_user = ConfigLoader().dic_user
             cls.instance.printlist=[]
             cls.instance.lock = threading.Lock()
         return cls.instance

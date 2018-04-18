@@ -9,12 +9,19 @@ import utils
 from printer import Printer
 from statistics import Statistics
 from bilibili import bilibili
+from configloader import ConfigLoader
 import threading
+import os
 import biliconsole
 
 
 
 loop = asyncio.get_event_loop() 
+fileDir = os.path.dirname(os.path.realpath('__file__'))
+file_color = fileDir + "/conf/color.conf"
+file_user = fileDir + "/conf/user.conf"
+file_bilibili = fileDir + "/conf/bilibili.conf"
+ConfigLoader(colorfile = file_color, userfile = file_user, bilibilifile = file_bilibili)
 
 # print('Hello world.')
 printer = Printer()

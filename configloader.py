@@ -97,6 +97,26 @@ def load_user(file):
         dic_user['print_control'][i] = dictionary[dic_user['print_control'][i]]
             
     return dic_user
+    
+    
+class ConfigLoader():
+    
+    instance = None
+
+    def __new__(cls, colorfile = None, userfile = None, bilibilifile = None):
+        if not cls.instance:
+            cls.instance = super(ConfigLoader, cls).__new__(cls)
+            cls.instance.dic_color = load_color(colorfile)
+            # print(self.dic_color)
+        
+            cls.instance.dic_user = load_user(userfile)
+            #print(self.dic_user)
+        
+            cls.instance.dic_bilibili = load_bilibili(bilibilifile)
+            # print(self.dic_bilibili)
+            print("# 初始化完成")
+        return cls.instance
+        
             
        
         

@@ -3,16 +3,14 @@ import datetime
 import time
 import asyncio
 import os
-import configloader
+from configloader import ConfigLoader
 import utils
 from printer import Printer
 
 class Tasks():
 
     def __init__(self):
-        fileDir = os.path.dirname(os.path.realpath('__file__'))
-        file_user = fileDir + "/conf/user.conf"
-        self.dic_user = configloader.load_user(file_user)
+        self.dic_user = ConfigLoader().dic_user
     
     # 获取每日包裹奖励
     async def Daily_bag(self):
