@@ -58,19 +58,19 @@ class Tasks():
                 Printer().printlist_append(['join_lottery', '', 'user',"# 应援团 %s 应援失败" %(i1)])
 
     async def send_gift(self):
-        if self.dic_user['gift']['on/off'] == '1':
+        if self.dic_user['task_control']['clean-expiring-gift']:
             argvs,x = await utils.fetch_bag_list(printer=False)
             for i in range(0,len(argvs)):
                 giftID = argvs[i][0]
                 giftNum = argvs[i][1]
                 bagID = argvs[i][2]
-                roomID = self.dic_user['gift']['send_to_room']
+                roomID = self.dic_user['task_control']['clean-expiring-gift2room']
                 await utils.send_gift_web(roomID,giftID,giftNum,bagID)
             if not argvs:
                 Printer().printlist_append(['join_lottery', '', 'user', "# 没有将要过期的礼物~"])
 
     async def auto_send_gift(self):
-        if self.dic_user['auto-gift']['on/off'] == "1":
+        if self.dic_user['task_control']['send2wearing-medal']:
             a = await utils.fetch_medal(printer=False)
             res = await bilibili().gift_list()
             json_res = await res.json()
@@ -104,7 +104,7 @@ class Tasks():
             Printer().printlist_append(['join_lottery', '', 'user', "# 自动送礼共送出亲密度为%s的礼物" % int(calculate)])
             
     async def doublegain_coin2silver(self):
-        if self.dic_user['doublegain_coin2silver']['on/off'] == "1":
+        if self.dic_user['task_control']['doublegain_coin2silver']:
             response0 = await bilibili().request_doublegain_coin2silver()
             json_response0 = await response0.json()
             response1 = await bilibili().request_doublegain_coin2silver()
@@ -112,7 +112,7 @@ class Tasks():
             print(json_response0['msg'], json_response1['msg'])
 
     async def sliver2coin(self):
-        if self.dic_user['coin']['on/off'] == '1':
+        if self.dic_user['task_control']['silver2coin']:
             response = await bilibili().silver2coin_web()
             response1 = await bilibili().silver2coin_app()
             json_response = await response.json()

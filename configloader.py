@@ -95,6 +95,10 @@ def load_user(file):
             
     for i in dic_user['print_control'].keys():
         dic_user['print_control'][i] = dictionary[dic_user['print_control'][i]]
+    
+    for i in dic_user['task_control'].keys():
+        dic_user['task_control'][i] = dictionary.get(dic_user['task_control'][i], dic_user['task_control'][i])
+    print(dic_user)
             
     return dic_user
     
