@@ -611,4 +611,32 @@ class bilibili():
         url = "https://api.live.bilibili.com/gift/v2/live/room_gift_list?roomid=2721650&area_v2_id=86"
         res = await self.bili_section_get(url)
         return res
-        
+    
+    # 视频投币
+    # 入口参数：
+    # string   aid  视频id
+    #    int count  投币数量 1 或 2
+    # 此接口请求数据使用 query string 而非 json
+    async def send_coin_add(self, aid, count):
+        url = 'https://api.bilibili.com/x/web-interface/coin/add'
+        data = 'aid=' + aid + '&multiply=' + str(count) + '&cross_domain=true&csrf=' + self.dic_bilibili['csrf']
+        # data = {
+        #     'aid' : aid,
+        #     'multiply' : count,
+        #     'cross_domain' : 'true',
+        #     'csrf_token' : self.dic_bilibili['csrf']
+        # }
+        headers = {
+            'Accept': '*/*',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36',
+            'Accept-Language': 'zh-CN,zh;q=0.9',
+            'accept-encoding': 'gzip, deflate, br',
+            'Host': 'api.bilibili.com',
+            'Connection':'keep-alive',
+            'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8',
+            'cookie': self.dic_bilibili['cookie'],
+            'Origin':'https://www.bilibili.com',
+            'Referer':'https://www.bilibili.com/video/av' + aid
+        }
+        response = requests.post(url, headers=headers, data=data)
+        print(response.josn())
